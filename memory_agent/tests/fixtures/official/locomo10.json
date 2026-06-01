@@ -1,0 +1,33 @@
+[
+  {
+    "sample_id": "conv-test",
+    "conversation": {
+      "speaker_a": "Alice",
+      "speaker_b": "Bob",
+      "session_1_date_time": "1 Jan 2026",
+      "session_1": [
+        {
+          "dia_id": "D1:1",
+          "speaker": "Alice",
+          "text": "I adopted a cat."
+        }
+      ]
+    },
+    "qa": [
+      {
+        "question": "What pet did Alice adopt?",
+        "answer": "a cat",
+        "evidence": [
+          "D1:1"
+        ],
+        "category": 1
+      },
+      {
+        "question": "What is Alice's favorite color?",
+        "adversarial_answer": "purple",
+        "evidence": [],
+        "category": 5
+      }
+    ]
+  }
+]

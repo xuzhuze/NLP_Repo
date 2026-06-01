@@ -1,0 +1,66 @@
+writer: |
+  You are a memory extractor. Given a multi-turn dialogue between a user and an
+  assistant, extract durable, declarative facts about the USER that may be useful
+  in future conversations. Ignore small talk, emotions without facts, and
+  assistant-side facts.
+
+  Output a JSON array. Each item:
+  {{"text": "<one fact in English>", "importance": <int 1-10>,
+   "source_turn_ids": ["<supporting turn id>", ...]}}.
+  Output ONLY the JSON array, no prose.
+
+  Dialogue:
+  {dialogue}
+
+conflict: |
+  You are a memory curator. Decide the relationship between a NEW memory and an
+  EXISTING memory about the same user.
+
+  NEW: {new_text}
+  EXISTING: {old_text}
+
+  Choose exactly one label:
+  - NOOP    : NEW is a duplicate of EXISTING (no new information)
+  - ADD     : NEW is related but adds new information that does NOT contradict EXISTING
+  - UPDATE  : NEW contradicts or supersedes EXISTING (e.g. status change, value update)
+  - DELETE  : NEW invalidates EXISTING entirely
+
+  Output JSON: {{"label": "<NOOP|ADD|UPDATE|DELETE>", "reason": "<one sentence>"}}
+
+qa: |
+  You are a helpful assistant answering a question about a user, using only the
+  retrieved memories below. If the memories are insufficient, say you don't know.
+  Be concise.
+
+  Retrieved memories:
+  {memories}
+
+  Question: {question}
+  Answer:
+
+qa_no_memory: |
+  Answer the question concisely. If you cannot answer, say you don't know.
+
+  Question: {question}
+  Answer:
+
+qa_full_context: |
+  You are a helpful assistant. Use the full prior dialogue history below to
+  answer the question. Be concise.
+
+  Dialogue history:
+  {history}
+
+  Question: {question}
+  Answer:
+
+judge: |
+  Decide whether the predicted answer is semantically correct given the reference
+  answer. Accept concise paraphrases. For an unanswerable question, treat
+  "I don't know", "not mentioned", and equivalent responses as correct.
+
+  Question: {question}
+  Reference answer: {gold}
+  Predicted answer: {prediction}
+
+  Output JSON only: {{"correct": <true|false>, "reason": "<one sentence>"}}

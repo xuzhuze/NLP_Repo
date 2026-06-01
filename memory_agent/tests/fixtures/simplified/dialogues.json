@@ -1,0 +1,27 @@
+[
+  {
+    "id": "d1",
+    "sessions": [
+      {
+        "id": "s1",
+        "turns": [
+          {
+            "id": "D1:1",
+            "speaker": "Alice",
+            "text": "I own a cat."
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "turns": [
+          {
+            "id": "D2:1",
+            "speaker": "Alice",
+            "text": "I no longer own a cat."
+          }
+        ]
+      }
+    ]
+  }
+]

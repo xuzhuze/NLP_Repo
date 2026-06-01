@@ -1,0 +1,10 @@
+.claude/
+.ruff_cache/
+.pytest_cache/
+pytest-cache-files-*/
+**/__pycache__/
+*.pyc
+.env
+**/.env
+**/.pytest_tmp/
+**/tests/_output/

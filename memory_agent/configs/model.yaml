@@ -1,0 +1,20 @@
+# 模型与检索参数。改这里不改代码。
+retrieval:
+  top_k: 5
+  embed_dim: 1024  # bge-m3 default
+
+generation:
+  temperature: 0.0
+  max_tokens: 512
+
+writer:
+  max_memories_per_session: 30
+  temperature: 0.0
+
+conflict:
+  similarity_threshold: 0.75  # 高于此值才送 LLM 判断
+  top_k_neighbors: 3
+  temperature: 0.0
+
+full_context:
+  max_context_chars: 24000  # 截断阈值

@@ -1,0 +1,31 @@
+[
+  {
+    "sample_id": "conv-test",
+    "conversation": {
+      "speaker_a": "Alice",
+      "speaker_b": "Bob",
+      "sessions": [
+        {
+          "session_id": 1,
+          "date_time": "1 Jan 2026",
+          "turns": [
+            {
+              "speaker": "Alice",
+              "dia_id": "D1:1",
+              "text": "I adopted a cat."
+            }
+          ]
+        }
+      ]
+    },
+    "qa_list": [
+      {
+        "qa_id": "conv-test_q0",
+        "question": "What pet did Alice adopt?",
+        "answer": "a cat",
+        "category": 1,
+        "category_name": "single_hop"
+      }
+    ]
+  }
+]

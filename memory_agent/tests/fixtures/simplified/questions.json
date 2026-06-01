@@ -1,0 +1,9 @@
+[
+  {
+    "id": "q1",
+    "dialogue_id": "d1",
+    "type": "update",
+    "question": "Does Alice still own a cat?",
+    "gold": "No"
+  }
+]
