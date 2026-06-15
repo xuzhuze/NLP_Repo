@@ -15,7 +15,7 @@ def normalize(s: str) -> str:
     """SQuAD 风格的文本归一化：小写、去标点、去冠词、压空白。"""
     if s is None:
         return ""
-    s = s.lower()
+    s = str(s).lower()  # 兼容数字型答案（如计数题 reference 为 int），不改变字符串语义
     s = re.sub(r"\b(a|an|the)\b", " ", s)          # 去冠词
     s = "".join(ch for ch in s if ch not in set(string.punctuation))  # 去标点
     s = re.sub(r"\s+", " ", s).strip()             # 压缩连续空白

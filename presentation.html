@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长期记忆对话 Agent · 答辩</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===========================================
+   VIEWPORT FITTING: MANDATORY BASE STYLES
+   =========================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow-x: hidden; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+.slide {
+    width: 100vw; height: 100vh; height: 100dvh;
+    overflow: hidden; scroll-snap-align: start;
+    display: flex; flex-direction: column; position: relative;
+    background: var(--paper);
+}
+.slide-content {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    max-height: 100%; overflow: hidden; padding: var(--slide-padding);
+}
+
+:root {
+    /* Swiss Modern palette */
+    --paper: #f4f4f1;
+    --ink: #111111;
+    --ink-soft: #555555;
+    --red: #e4002b;
+    --line: #d2d2cc;
+    --card: #ffffff;
+
+    --title-size: clamp(1.5rem, 5vw, 4rem);
+    --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+    --h3-size: clamp(1rem, 2.5vw, 1.6rem);
+    --body-size: clamp(0.75rem, 1.45vw, 1.05rem);
+    --small-size: clamp(0.62rem, 1vw, 0.82rem);
+
+    --slide-padding: clamp(1.2rem, 4.5vw, 4.5rem);
+    --content-gap: clamp(0.5rem, 2vw, 1.8rem);
+    --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+    --font-head: 'Archivo', sans-serif;
+    --font-body: 'Nunito', sans-serif;
+}
+
+body { font-family: var(--font-body); color: var(--ink); background: var(--paper); }
+
+/* ---------- Swiss grid overlay ---------- */
+.grid-bg {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: clamp(40px,7vw,90px) clamp(40px,7vw,90px);
+    opacity: .35;
+}
+.slide-content { position: relative; z-index: 1; }
+
+/* ---------- shared type ---------- */
+.kicker {
+    font-family: var(--font-head); font-weight: 800; letter-spacing: .22em;
+    text-transform: uppercase; font-size: var(--small-size); color: var(--red);
+    display: flex; align-items: center; gap: .6em; margin-bottom: var(--element-gap);
+}
+.kicker::before { content:""; width: clamp(28px,4vw,56px); height: 3px; background: var(--red); display:inline-block; }
+
+h1 { font-family: var(--font-head); font-weight: 900; font-size: var(--title-size); line-height: 1.02; letter-spacing: -.01em; }
+h2 { font-family: var(--font-head); font-weight: 800; font-size: var(--h2-size); line-height: 1.06; letter-spacing: -.01em; }
+h3 { font-family: var(--font-head); font-weight: 700; font-size: var(--h3-size); line-height: 1.15; }
+p, li, td, th { font-size: var(--body-size); line-height: 1.5; color: var(--ink); }
+.soft { color: var(--ink-soft); }
+.red { color: var(--red); }
+b, strong { font-weight: 800; }
+
+/* oversized section number */
+.section-no {
+    position: absolute; top: clamp(1rem,3vh,2.5rem); right: clamp(1rem,4vw,3.5rem);
+    font-family: var(--font-head); font-weight: 900;
+    font-size: clamp(3rem, 12vw, 11rem); line-height: .8; color: var(--ink);
+    opacity: .06; z-index: 0; user-select: none;
+}
+.footer {
+    position: absolute; bottom: clamp(.6rem,2vh,1.4rem); left: var(--slide-padding);
+    right: var(--slide-padding); display: flex; justify-content: space-between;
+    font-family: var(--font-head); font-size: var(--small-size);
+    letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); z-index: 2;
+}
+.footer .red { font-weight: 800; }
+
+/* lists */
+.blist { list-style: none; display: flex; flex-direction: column; gap: clamp(.45rem,1.4vh,1.1rem); }
+.blist li { display: flex; gap: .7em; align-items: flex-start; }
+.blist li::before { content:""; flex:none; width: .62em; height: .62em; margin-top:.5em; background: var(--red); }
+.blist li.tick::before { background: var(--ink); }
+
+/* cards / grid */
+.grid { display: grid; gap: clamp(.5rem,1.4vw,1rem); }
+.cols-2 { grid-template-columns: 1fr 1fr; }
+.cols-3 { grid-template-columns: repeat(3,1fr); }
+.cols-5 { grid-template-columns: repeat(5,1fr); }
+.card {
+    background: var(--card); border: 1.5px solid var(--ink);
+    padding: clamp(.7rem,1.6vw,1.3rem); position: relative;
+}
+.card h3 { margin-bottom: .35em; }
+.card .tag {
+    font-family: var(--font-head); font-weight: 800; font-size: var(--small-size);
+    color: var(--red); letter-spacing: .1em;
+}
+.card.accent { background: var(--ink); color: var(--paper); }
+.card.accent h3, .card.accent p, .card.accent li { color: var(--paper); }
+.card.accent .tag { color: var(--red); }
+.card.red-fill { background: var(--red); border-color: var(--red); color:#fff; }
+.card.red-fill h3, .card.red-fill p, .card.red-fill .tag { color:#fff; }
+
+/* tables */
+table { border-collapse: collapse; width: 100%; background: var(--card); }
+th, td { border: 1px solid var(--line); padding: clamp(.3rem,.8vw,.6rem) clamp(.35rem,1vw,.8rem); text-align: center; }
+th { font-family: var(--font-head); font-weight: 800; background: var(--ink); color: var(--paper); font-size: var(--small-size); letter-spacing: .04em; }
+td:first-child, th:first-child { text-align: left; }
+tr.ours td { background: #fff3f4; font-weight: 700; }
+tr.best td { }
+td.hi { color: var(--red); font-weight: 800; }
+.tbl-note { font-size: var(--small-size); color: var(--ink-soft); margin-top: .5em; }
+
+/* metric chips */
+.chips { display:flex; gap: clamp(.5rem,1.5vw,1.2rem); flex-wrap: wrap; }
+.chip { border:1.5px solid var(--ink); padding: clamp(.5rem,1.3vw,1rem) clamp(.7rem,1.8vw,1.4rem); background: var(--card); min-width: clamp(120px,18vw,200px); }
+.chip .num { font-family: var(--font-head); font-weight: 900; font-size: clamp(1.4rem,4vw,2.8rem); line-height:1; color: var(--red); }
+.chip .lab { font-size: var(--small-size); color: var(--ink-soft); margin-top:.3em; text-transform: uppercase; letter-spacing:.08em; }
+
+/* flow diagram */
+.flow { display:flex; align-items: stretch; gap: clamp(.4rem,1vw,.9rem); flex-wrap: nowrap; }
+.flow .node { flex:1; border:1.5px solid var(--ink); background:var(--card); padding: clamp(.5rem,1.2vw,1rem); display:flex; flex-direction:column; justify-content:center; text-align:center; }
+.flow .node .t { font-family:var(--font-head); font-weight:800; font-size: var(--body-size); }
+.flow .node .d { font-size: var(--small-size); color: var(--ink-soft); margin-top:.25em; }
+.flow .arrow { align-self:center; color: var(--red); font-weight:900; font-size: clamp(1rem,2.5vw,1.8rem); font-family:var(--font-head); }
+
+/* title slide specifics */
+.title-slide .slide-content { justify-content: center; }
+.title-band { display:flex; align-items:center; gap:.7em; margin: var(--content-gap) 0; }
+.title-band .dot { width: clamp(14px,2vw,22px); height: clamp(14px,2vw,22px); background: var(--red); }
+.meta-row { display:flex; gap: clamp(1rem,4vw,3rem); flex-wrap:wrap; margin-top: var(--content-gap); }
+.meta-row .k { font-size: var(--small-size); color: var(--ink-soft); text-transform:uppercase; letter-spacing:.12em; }
+.meta-row .v { font-family: var(--font-head); font-weight:700; font-size: var(--h3-size); }
+
+/* two-col layout */
+.split { display:grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem,3vw,2.5rem); align-items:center; height:100%; }
+.split.narrow-left { grid-template-columns: .8fr 1.2fr; }
+
+/* reveal animation */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.in { opacity: 1; transform: none; }
+.slide.active .reveal { opacity:1; transform:none; }
+[data-d="1"]{transition-delay:.08s}[data-d="2"]{transition-delay:.16s}[data-d="3"]{transition-delay:.24s}
+[data-d="4"]{transition-delay:.32s}[data-d="5"]{transition-delay:.40s}[data-d="6"]{transition-delay:.48s}
+
+/* nav */
+.nav-dots { position: fixed; right: clamp(.6rem,1.5vw,1.4rem); top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:.6rem; z-index:50; }
+.nav-dots button { width:10px; height:10px; border:1.5px solid var(--ink); background:transparent; cursor:pointer; padding:0; border-radius:0; }
+.nav-dots button.on { background: var(--red); border-color: var(--red); }
+.progress { position: fixed; top:0; left:0; height:4px; background: var(--red); z-index:60; transition: width .3s ease; }
+.hint { position: fixed; bottom: clamp(.5rem,1.5vh,1rem); left:50%; transform:translateX(-50%); font-size: var(--small-size); color: var(--ink-soft); z-index:50; letter-spacing:.1em; }
+
+@media (max-height: 700px){ :root{ --slide-padding: clamp(.9rem,3vw,2rem); --content-gap: clamp(.4rem,1.5vw,1rem);} }
+@media (max-height: 600px){ .nav-dots,.hint,.grid-bg{ display:none;} }
+@media (max-width: 760px){ .split,.split.narrow-left{ grid-template-columns:1fr; } .cols-5,.cols-3{ grid-template-columns:1fr 1fr;} .flow{ flex-wrap:wrap;} }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation-duration:.01ms!important; transition-duration:.2s!important;} html{scroll-behavior:auto;} .reveal{opacity:1;transform:none;} }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<nav class="nav-dots" id="navdots" aria-label="幻灯片导航"></nav>
+<div class="hint">↓ / 空格 / 滚轮 翻页　·　共 10 页</div>
+
+<main>
+
+<!-- 1 · TITLE -->
+<section class="slide title-slide" id="s1">
+  <div class="grid-bg"></div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">NJU · 自然语言处理课程项目 · 答辩</div>
+    <h1 class="reveal" data-d="2">长期记忆<br>对话 <span class="red">Agent</span></h1>
+    <div class="title-band reveal" data-d="3">
+      <span class="dot"></span>
+      <span style="font-family:var(--font-head);font-weight:700;font-size:var(--h3-size)">让 LLM 跨会话记住、检索并<span class="red">更新</span>记忆</span>
+    </div>
+    <div class="meta-row reveal" data-d="4">
+      <div><div class="k">核心方向</div><div class="v">记忆更新 · 冲突感知</div></div>
+      <div><div class="k">参考工作</div><div class="v">Mem0 · Generative Agents</div></div>
+      <div><div class="k">评测基准</div><div class="v">LoCoMo</div></div>
+    </div>
+  </div>
+  <div class="footer"><span>长期记忆对话 Agent</span><span class="red">01 / 10</span></div>
+</section>
+
+<!-- 2 · 背景与目标 -->
+<section class="slide" id="s2">
+  <div class="grid-bg"></div>
+  <div class="section-no">02</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">选题背景与目标</div>
+    <h2 class="reveal" data-d="2">LLM 是<span class="red">无状态</span>的——<br>对话一结束，它就把你忘了</h2>
+    <div class="split" style="margin-top:var(--content-gap)">
+      <ul class="blist">
+        <li class="reveal" data-d="3"><span><b>痛点</b>：模型不记得跨会话的用户信息，长期交互中无法回忆、利用、更新历史事实。</span></li>
+        <li class="reveal" data-d="4"><span><b>关键难题</b>：旧信息会过时（"我搬到了上海"→后来"我去了北京"），单纯堆历史既塞不下也会自相矛盾。</span></li>
+        <li class="reveal" data-d="5"><span><b>目标</b>：从多会话对话<b>提取记忆单元</b>→检索辅助问答→在冲突时<b class="red">更新/替换</b>旧记忆。</span></li>
+        <li class="reveal tick" data-d="6"><span><b>课程关联</b>：信息抽取、稠密检索(RAG)、Prompt 工程、LLM-as-Judge 评测的综合实践。</span></li>
+      </ul>
+      <div class="grid" style="gap:clamp(.6rem,1.6vw,1.1rem)">
+        <div class="card accent reveal" data-d="4"><div class="tag">应用场景</div><h3>个人助理</h3><p class="soft">长期陪伴、跨会话偏好记忆</p></div>
+        <div class="card reveal" data-d="5"><div class="tag">应用场景</div><h3>客服 / 医疗</h3><p class="soft">用户档案随时间持续更新</p></div>
+        <div class="card red-fill reveal" data-d="6"><div class="tag" style="color:#fff">研究意义</div><h3>记忆动力学</h3><p>近两年最活跃方向之一</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>选题背景与目标</span><span class="red">02 / 10</span></div>
+</section>
+
+<!-- 3 · 相关工作与定位 -->
+<section class="slide" id="s3">
+  <div class="grid-bg"></div>
+  <div class="section-no">03</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">相关工作与定位</div>
+    <h2 class="reveal" data-d="2">站在四篇工作之上，<br>聚焦 <span class="red">Mem0</span> 的冲突更新流程</h2>
+    <div class="grid cols-2" style="margin-top:var(--content-gap);gap:clamp(.55rem,1.5vw,1rem)">
+      <div class="card reveal" data-d="3"><div class="tag">Generative Agents · UIST'23</div><h3>三因子检索 + 反思</h3><p class="soft">Recency × Importance × Relevance（作为加分方向 S3 的来源）</p></div>
+      <div class="card reveal" data-d="4"><div class="tag">MemoryBank · AAAI'24</div><h3>遗忘曲线</h3><p class="soft">基于 Ebbinghaus 的记忆衰减动力学</p></div>
+      <div class="card accent reveal" data-d="5"><div class="tag">Mem0 · ECAI'25</div><h3>提取 → 冲突检测 → 更新</h3><p class="soft">本项目<b class="red">核心借鉴</b>：工程化记忆更新流水线</p></div>
+      <div class="card reveal" data-d="6"><div class="tag">LoCoMo · ACL'24</div><h3>长期对话评测基准</h3><p class="soft">本项目评测数据来源</p></div>
+    </div>
+    <p class="reveal" data-d="6" style="margin-top:var(--content-gap)"><b>我们的定位：</b>不止"只追加"记忆，而是实现 Mem0 式 <b class="red">conflict-aware 更新</b>——新事实到来时检测语义冲突并替换旧记忆，并通过<b>干净消融</b>量化它的净收益。</p>
+  </div>
+  <div class="footer"><span>相关工作与定位</span><span class="red">03 / 10</span></div>
+</section>
+
+<!-- 4 · 技术路线 / 五模块 -->
+<section class="slide" id="s4">
+  <div class="grid-bg"></div>
+  <div class="section-no">04</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">技术路线 · 方法</div>
+    <h2 class="reveal" data-d="2">五个核心模块，<span class="red">原始对话与派生记忆严格分离</span></h2>
+    <div class="grid cols-5" style="margin-top:var(--content-gap)">
+      <div class="card reveal" data-d="2"><div class="tag">STORE</div><h3>记忆存储</h3><p class="soft">FAISS 向量索引 + JSON 元数据；无 FAISS 时自动回退 NumPy</p></div>
+      <div class="card reveal" data-d="3"><div class="tag">WRITER</div><h3>记忆写入</h3><p class="soft">会话结束 LLM 批量提取记忆单元，保留来源 turn</p></div>
+      <div class="card reveal" data-d="4"><div class="tag">RETRIEVER</div><h3>记忆检索</h3><p class="soft">余弦相似度 dense top-k（可选三因子）</p></div>
+      <div class="card accent reveal" data-d="5"><div class="tag">UPDATER</div><h3>记忆更新</h3><p class="soft"><b class="red">append_only<br>vs conflict_aware</b></p></div>
+      <div class="card reveal" data-d="6"><div class="tag">CONTROLLER</div><h3>主流程编排</h3><p class="soft">写入→检索→生成 + 全链路 trace 日志</p></div>
+    </div>
+    <ul class="blist" style="margin-top:var(--content-gap)">
+      <li class="reveal tick" data-d="6"><span>每条记忆结构：<code style="font-family:var(--font-head)">{id, text, source_turn_ids, ts, version, status, supersedes}</code></span></li>
+      <li class="reveal tick" data-d="6"><span>每次问答落盘 trace：<b>检索内容 + 完整 prompt + 输出 + 延迟</b>，所有记忆操作可追踪。</span></li>
+    </ul>
+  </div>
+  <div class="footer"><span>技术路线 · 方法</span><span class="red">04 / 10</span></div>
+</section>
+
+<!-- 5 · 系统架构图 -->
+<section class="slide" id="s5">
+  <div class="grid-bg"></div>
+  <div class="section-no">05</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">系统架构 · 数据流</div>
+    <h2 class="reveal" data-d="2">两条主链路：<span class="red">写入侧</span> 与 <span class="red">问答侧</span></h2>
+
+    <div class="reveal" data-d="3" style="margin-top:var(--content-gap)">
+      <p class="soft" style="font-family:var(--font-head);font-weight:800;letter-spacing:.1em;margin-bottom:.5em">① 会话结束 · 写入侧</p>
+      <div class="flow">
+        <div class="node"><div class="t">原始对话</div><div class="d">raw dialogue（落盘不入库）</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="t">Memory Writer</div><div class="d">LLM 提取记忆单元</div></div>
+        <div class="arrow">→</div>
+        <div class="node" style="border-color:var(--red)"><div class="t red">Memory Updater</div><div class="d">append_only / conflict_aware</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="t">Memory Store</div><div class="d">FAISS + JSON</div></div>
+      </div>
+    </div>
+
+    <div class="reveal" data-d="5" style="margin-top:var(--content-gap)">
+      <p class="soft" style="font-family:var(--font-head);font-weight:800;letter-spacing:.1em;margin-bottom:.5em">② 新问题 · 问答侧</p>
+      <div class="flow">
+        <div class="node"><div class="t">新 Query</div><div class="d">用户提问</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="t">Retriever</div><div class="d">dense top-k 检索</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="t">Prompt 拼装</div><div class="d">记忆 + 问题</div></div>
+        <div class="arrow">→</div>
+        <div class="node" style="border-color:var(--red)"><div class="t red">LLM 生成答案</div><div class="d">+ trace 落盘</div></div>
+      </div>
+    </div>
+    <p class="reveal tick" data-d="6" style="margin-top:var(--content-gap)"><b>关键原则：</b>不把原始对话直接当记忆塞进向量库——只检索<b class="red">派生记忆单元</b>，这是"探索深度"的核心设计。</p>
+  </div>
+  <div class="footer"><span>系统架构 · 数据流</span><span class="red">05 / 10</span></div>
+</section>
+
+<!-- 6 · 核心创新：冲突感知更新 -->
+<section class="slide" id="s6">
+  <div class="grid-bg"></div>
+  <div class="section-no">06</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">核心创新点</div>
+    <h2 class="reveal" data-d="2">冲突感知更新：<span class="red">新事实到来时，让旧记忆"退役"</span></h2>
+    <div class="split narrow-left" style="margin-top:var(--content-gap)">
+      <ul class="blist">
+        <li class="reveal" data-d="3"><span>写入新记忆前，先检索<b>语义相近的活跃旧记忆</b>。</span></li>
+        <li class="reveal" data-d="4"><span>相似度超阈值后，调 LLM 判定四选一：<br><b class="red">NOOP / ADD / UPDATE / DELETE</b>。</span></li>
+        <li class="reveal" data-d="5"><span>判 UPDATE 时：旧记忆标记 <code style="font-family:var(--font-head)">superseded</code>，新记忆记 <code style="font-family:var(--font-head)">supersedes</code> + 版本号 +1。</span></li>
+        <li class="reveal tick" data-d="6"><span>仅对高相似候选调 LLM，控制成本。</span></li>
+      </ul>
+      <div class="grid" style="gap:clamp(.5rem,1.4vw,.9rem)">
+        <div class="card reveal" data-d="4"><div class="tag">S1 · 对照组（拆掉创新）</div><h3>AppendOnly</h3><p class="soft">只追加，从不处理冲突 → 旧的过时记忆永远留着</p></div>
+        <div class="card red-fill reveal" data-d="5"><div class="tag" style="color:#fff">S2 · 我方核心方案</div><h3>ConflictAware</h3><p>检测冲突 → 更新/替换 → 库里只留最新事实</p></div>
+        <div class="card accent reveal" data-d="6"><div class="tag">消融唯一变量</div><h3>S1 vs S2</h3><p class="soft">同模型、同数据、同检索，<b class="red">只改更新策略</b></p></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>核心创新 · 冲突感知更新</span><span class="red">06 / 10</span></div>
+</section>
+
+<!-- 7 · 数据集与实验设计 -->
+<section class="slide" id="s7">
+  <div class="grid-bg"></div>
+  <div class="section-no">07</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">数据集与实验设计</div>
+    <h2 class="reveal" data-d="2">LoCoMo 分层抽样 · <span class="red">5 组系统</span> · 4 类题型</h2>
+    <div class="split" style="margin-top:var(--content-gap)">
+      <div>
+        <h3 class="reveal" data-d="3" style="margin-bottom:.5em">实验矩阵</h3>
+        <table class="reveal" data-d="3">
+          <tr><th>系统</th><th>检索对象</th><th>更新</th></tr>
+          <tr><td>B0 无记忆</td><td>—</td><td>—</td></tr>
+          <tr><td>B1 全上下文</td><td>完整历史</td><td>—</td></tr>
+          <tr><td>B2 原始RAG</td><td>原始 turn</td><td>—</td></tr>
+          <tr class="ours"><td>S1 本系统-A</td><td>派生记忆</td><td>only</td></tr>
+          <tr class="ours"><td>S2 本系统-B</td><td>派生记忆</td><td class="hi">冲突感知</td></tr>
+        </table>
+        <p class="tbl-note reveal" data-d="3">三 baseline 证明"记忆有用"；S1↔S2 是核心消融。</p>
+      </div>
+      <div>
+        <h3 class="reveal" data-d="4" style="margin-bottom:.5em">设置与指标</h3>
+        <ul class="blist">
+          <li class="reveal" data-d="4"><span><b>底座模型</b>：qwen-plus（5 组统一）；<b>Embedding</b>：text-embedding-v3；<b>Judge</b>：deepseek-v3（异源）。</span></li>
+          <li class="reveal" data-d="5"><span><b>题型分类汇报</b>：single_hop / temporal / multi_hop / open_domain。</span></li>
+          <li class="reveal" data-d="6"><span><b>指标</b>：LLM-as-Judge 得分（主）+ F1 + EM + 记忆写入耗时 + 端到端延迟。</span></li>
+        </ul>
+        <div class="chips reveal" data-d="6" style="margin-top:var(--content-gap)">
+          <div class="chip"><div class="num" data-fill="N_CONV">3</div><div class="lab">对话段数</div></div>
+          <div class="chip"><div class="num" data-fill="N_Q">45</div><div class="lab">评测问题</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>数据集与实验设计</span><span class="red">07 / 10</span></div>
+</section>
+
+<!-- 8 · 实验结果 -->
+<section class="slide" id="s8">
+  <div class="grid-bg"></div>
+  <div class="section-no">08</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">实验结果与对比</div>
+    <h2 class="reveal" data-d="2">无记忆仅 <span class="red">3.3%</span>，引入记忆后跃升至 33–37%；<br>S2 在记忆系统中得分最高</h2>
+    <div class="reveal" data-d="3" style="margin-top:var(--content-gap)">
+      <table id="result-table">
+        <tr><th>系统</th><th>Judge 得分</th><th>F1</th><th>EM</th><th>single</th><th>temporal</th><th>multi</th><th>open</th><th>写入(s)</th><th>延迟(s)</th></tr>
+        <tr><td>B0 无记忆</td><td data-r="B0.judge">3.3</td><td data-r="B0.f1">0.0</td><td data-r="B0.em">0.0</td><td data-r="B0.single">4.2</td><td data-r="B0.temporal">0.0</td><td data-r="B0.multi">0.0</td><td data-r="B0.open">10.0</td><td data-r="B0.calls">~1</td><td data-r="B0.lat">0.55</td></tr>
+        <tr><td>B1 全上下文</td><td class="hi" data-r="B1.judge">36.7</td><td data-r="B1.f1">9.8</td><td data-r="B1.em">0.0</td><td data-r="B1.single">41.7</td><td data-r="B1.temporal">21.4</td><td data-r="B1.multi">55.6</td><td data-r="B1.open">35.0</td><td data-r="B1.calls">~1</td><td data-r="B1.lat">1.21</td></tr>
+        <tr><td>B2 原始RAG</td><td data-r="B2.judge">33.3</td><td data-r="B2.f1">11.0</td><td data-r="B2.em">2.2</td><td data-r="B2.single">20.8</td><td data-r="B2.temporal">14.3</td><td data-r="B2.multi">38.9</td><td data-r="B2.open">70.0</td><td data-r="B2.calls">128</td><td data-r="B2.lat">0.99</td></tr>
+        <tr class="ours"><td>S1 只追加</td><td data-r="S1.judge">33.3</td><td data-r="S1.f1">10.9</td><td data-r="S1.em">0.0</td><td data-r="S1.single">29.2</td><td data-r="S1.temporal">14.3</td><td data-r="S1.multi">72.2</td><td data-r="S1.open">30.0</td><td data-r="S1.calls">343</td><td data-r="S1.lat">0.92</td></tr>
+        <tr class="ours"><td>S2 冲突感知</td><td class="hi" data-r="S2.judge">34.4</td><td data-r="S2.f1">11.2</td><td data-r="S2.em">0.0</td><td data-r="S2.single">37.5</td><td data-r="S2.temporal">7.1</td><td data-r="S2.multi">72.2</td><td data-r="S2.open">35.0</td><td class="hi" data-r="S2.calls">1449</td><td data-r="S2.lat">0.94</td></tr>
+      </table>
+      <p class="tbl-note">主指标为异源 LLM-as-Judge 得分（deepseek-v3）；F1 / EM 作为廉价交叉验证。<span class="red" data-fill="RESULT_STATUS">（真实评测数据 · 异源 deepseek-v3 Judge）</span></p>
+    </div>
+    <p class="reveal tick" data-d="5" style="margin-top:var(--content-gap)"><b>达标判定：</b>S2 (34.4%) <b class="red">≥ Vanilla RAG B2 (33.3%)</b>，满足合格线；B1 全上下文在 3 段短对话上最高属预期——历史越长，记忆系统优势越显著。</p>
+  </div>
+  <div class="footer"><span>实验结果与对比</span><span class="red">08 / 10</span></div>
+</section>
+
+<!-- 9 · 消融 + Bad case -->
+<section class="slide" id="s9">
+  <div class="grid-bg"></div>
+  <div class="section-no">09</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">消融分析 · Bad case</div>
+    <h2 class="reveal" data-d="2">S2 − S1 = <span class="red">冲突感知更新的净收益</span></h2>
+    <div class="split" style="margin-top:var(--content-gap)">
+      <div>
+        <div class="chips reveal" data-d="3">
+          <div class="chip"><div class="num" data-fill="DELTA_JUDGE">+1.1 pp</div><div class="lab">S2−S1 总分净收益</div></div>
+          <div class="chip"><div class="num" data-fill="COST_RATIO">≈4.2×</div><div class="lab">写入耗时 S2/S1</div></div>
+        </div>
+        <ul class="blist reveal" data-d="4" style="margin-top:var(--content-gap)">
+          <li><span><b>逐题对比</b>：S2 相对 S1 <b class="red">4 题变好、5 题变差</b>，但靠部分得分加权，总分仍净增 +1.1pp。小样本下效应温和。</span></li>
+          <li class="tick"><span><b>成本-效果权衡</b>：冲突判断让 S2 写入耗时是 S1 的 ~4.2 倍（1449s vs 343s），收益与开销需一并评估。</span></li>
+          <li class="tick"><span><b>观察点</b>：抽样集无单独"信息更新"类别，须结合分类指标 + 含冲突事实的样例分析，不能只看类别均值。</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="reveal" data-d="5" style="margin-bottom:.5em">Bad case 三类定位</h3>
+        <div class="grid" style="gap:clamp(.45rem,1.3vw,.8rem)">
+          <div class="card reveal" data-d="5"><div class="tag">① 写入丢失</div><p class="soft"><b>"Melanie 何时去露营?"</b>（答案 June 2023）→ S2 答"记忆未提及计划时间"：时间事实没被 Writer 提取。</p></div>
+          <div class="card reveal" data-d="6"><div class="tag">② 检索未命中</div><p class="soft"><b>"Melanie 有哪些爱好?"</b>（陶艺/露营/绘画/游泳）→ S2 召回到跑步、小提琴等无关记忆。</p></div>
+          <div class="card reveal" data-d="6"><div class="tag">③ 生成未利用</div><p class="soft"><b>"Caroline 信教吗?"</b>（答案：有点）→ S2 过度否定答"完全不信"，没用好检索到的记忆。</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>消融分析 · Bad case</span><span class="red">09 / 10</span></div>
+</section>
+
+<!-- 10 · 反思与未来 -->
+<section class="slide" id="s10">
+  <div class="grid-bg"></div>
+  <div class="section-no">10</div>
+  <div class="slide-content">
+    <div class="kicker reveal" data-d="1">问题反思 · 局限 · 未来</div>
+    <h2 class="reveal" data-d="2">已解决的难点 &amp; <span class="red">下一步</span></h2>
+    <div class="split" style="margin-top:var(--content-gap)">
+      <div>
+        <h3 class="reveal" data-d="3" style="margin-bottom:.5em">实验中的挑战与应对</h3>
+        <ul class="blist">
+          <li class="reveal" data-d="3"><span>LoCoMo 官方/助教两套数据格式 → 加载器双兼容。</span></li>
+          <li class="reveal" data-d="4"><span>Windows 装不了 faiss-cpu → NumPy 后备索引。</span></li>
+          <li class="reveal" data-d="5"><span>助教脚本 GBK 写 emoji 崩溃、数字答案评分崩溃 → UTF-8 + 类型兼容修复。</span></li>
+          <li class="reveal" data-d="5"><span>Embedding API 单次上限 → 自动分批。</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="reveal" data-d="4" style="margin-bottom:.5em">局限与未来改进</h3>
+        <ul class="blist">
+          <li class="reveal" data-d="4"><span><b>局限</b>：S2 冲突判断引入额外 LLM 调用，写入耗时显著上升（成本-效果权衡）。</span></li>
+          <li class="reveal" data-d="5"><span><b>局限</b>：抽样规模有限，结论需更大样本验证。</span></li>
+          <li class="reveal tick" data-d="6"><span><b class="red">S3 加分方向</b>：三因子检索（relevance × recency × importance）。</span></li>
+          <li class="reveal tick" data-d="6"><span>遗忘曲线、周期性 reflection 生成高阶记忆。</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="reveal" data-d="6" style="margin-top:var(--content-gap);text-align:center;font-family:var(--font-head);font-weight:800;font-size:var(--h3-size)">谢谢 · 欢迎提问　<span class="red">Q &amp; A</span></p>
+  </div>
+  <div class="footer"><span>反思与未来</span><span class="red">10 / 10</span></div>
+</section>
+
+</main>
+
+<script>
+// ---- navigation controller ----
+const slides = Array.from(document.querySelectorAll('.slide'));
+const dotsWrap = document.getElementById('navdots');
+const progress = document.getElementById('progress');
+let current = 0;
+
+slides.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.setAttribute('aria-label', '第' + (i+1) + '页');
+  b.addEventListener('click', () => goto(i));
+  dotsWrap.appendChild(b);
+});
+const dots = Array.from(dotsWrap.children);
+
+function setActive(i){
+  current = Math.max(0, Math.min(slides.length-1, i));
+  dots.forEach((d,k)=>d.classList.toggle('on', k===current));
+  progress.style.width = ((current+1)/slides.length*100) + '%';
+  slides.forEach((s,k)=>s.classList.toggle('active', k===current));
+}
+function goto(i){ slides[Math.max(0,Math.min(slides.length-1,i))].scrollIntoView({behavior:'smooth'}); }
+
+// keyboard
+window.addEventListener('keydown', e=>{
+  if(['ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); goto(current+1);}
+  else if(['ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); goto(current-1);}
+  else if(e.key==='Home'){ goto(0);} else if(e.key==='End'){ goto(slides.length-1);}
+});
+// wheel (debounced)
+let wlock=false;
+window.addEventListener('wheel', e=>{
+  if(wlock) return; if(Math.abs(e.deltaY)<20) return;
+  wlock=true; goto(current + (e.deltaY>0?1:-1));
+  setTimeout(()=>wlock=false, 700);
+}, {passive:true});
+// touch
+let ty=null;
+window.addEventListener('touchstart', e=>ty=e.touches[0].clientY, {passive:true});
+window.addEventListener('touchend', e=>{ if(ty===null) return; const dy=ty-e.changedTouches[0].clientY; if(Math.abs(dy)>50) goto(current+(dy>0?1:-1)); ty=null;}, {passive:true});
+
+// observe which slide is in view
+const io = new IntersectionObserver((ents)=>{
+  ents.forEach(en=>{ if(en.isIntersecting){ setActive(slides.indexOf(en.target)); }});
+}, {threshold:0.55});
+slides.forEach(s=>io.observe(s));
+
+// reveal animation per slide
+const ro = new IntersectionObserver((ents)=>{
+  ents.forEach(en=>{ if(en.isIntersecting){ en.target.querySelectorAll('.reveal').forEach(r=>r.classList.add('in')); }});
+}, {threshold:0.4});
+slides.forEach(s=>ro.observe(s));
+
+setActive(0);
+
+// ---- results injection hook: window.RESULTS can be set to fill data-r / data-fill ----
+window.applyResults = function(R){
+  if(!R) return;
+  document.querySelectorAll('[data-r]').forEach(el=>{
+    const v = el.getAttribute('data-r').split('.').reduce((o,k)=>o&&o[k], R);
+    if(v!==undefined && v!==null) el.textContent = v;
+  });
+  if(R._fill){ document.querySelectorAll('[data-fill]').forEach(el=>{ const k=el.getAttribute('data-fill'); if(R._fill[k]!==undefined) el.textContent=R._fill[k]; }); }
+};
+</script>
+</body>
+</html>

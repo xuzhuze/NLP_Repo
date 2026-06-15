@@ -54,13 +54,24 @@ class LLMClient:
         )
         return resp.choices[0].message.content or ""
 
+    # Some providers cap inputs per embedding request (e.g. DashScope
+    # text-embedding-v3 allows at most 10). Chunk to stay within that limit.
+    EMBED_BATCH = 10
+
     @retry(stop=stop_after_attempt(4), wait=wait_exponential(min=1, max=20))
+    def _embed_batch(self, batch: list[str]) -> list[list[float]]:
+        self.call_count += 1
+        resp = self._client.embeddings.create(model=self.cfg.model, input=batch)
+        return [d.embedding for d in resp.data]
+
     def embed(self, texts: Sequence[str]) -> np.ndarray:
         if not texts:
             return np.zeros((0, 0), dtype=np.float32)
-        self.call_count += 1
-        resp = self._client.embeddings.create(model=self.cfg.model, input=list(texts))
-        vecs = np.asarray([d.embedding for d in resp.data], dtype=np.float32)
+        items = list(texts)
+        raw: list[list[float]] = []
+        for start in range(0, len(items), self.EMBED_BATCH):
+            raw.extend(self._embed_batch(items[start : start + self.EMBED_BATCH]))
+        vecs = np.asarray(raw, dtype=np.float32)
         # L2-normalize so dot product == cosine similarity (FAISS IndexFlatIP)
         norms = np.linalg.norm(vecs, axis=1, keepdims=True)
         norms[norms == 0] = 1.0
